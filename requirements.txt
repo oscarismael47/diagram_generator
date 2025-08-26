@@ -1,0 +1,22 @@
+langgraph
+langchain-openai
+langchain-tavily
+langgraph-cli[inmem]
+python-dotenv
+streamlit
+diagrams
+
+#st-link-analysis
+
+## create env
+# uv venv --python 3.12
+
+## activate env
+# Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+# .venv\Scripts\Activate.ps1
+
+## install dependencies
+# uv pip install -r requirements.txt
+
+## run langgraph studio
+# uv langgraph studio

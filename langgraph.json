@@ -1,0 +1,14 @@
+{
+    "dependencies": [
+        "langgraph",
+        "langchain-openai",
+        "langchain-tavily",
+        "langgraph-cli[inmem]",
+        "python-dotenv"
+    ],
+    "graphs": {
+        "my_agent": "./agent/agent.py:agent"
+    },
+    "env": "./.env"
+}
+

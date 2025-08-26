@@ -1,49 +1,143 @@
 import os
+from pyexpat import model
 from langchain_openai import ChatOpenAI
 from langchain_tavily import TavilySearch
 from langgraph.graph import MessagesState
 from langgraph.constants import START, END
 from langgraph.graph import StateGraph
-from langgraph.prebuilt import ToolNode, tools_condition
-
+from langgraph.checkpoint.memory import MemorySaver
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
+from pydantic import BaseModel, Field
 from dotenv import load_dotenv
-
+try:
+    from agent.utils.diagram_handler import generate
+except:
+    from utils.diagram_handler import generate
 load_dotenv()
 
 # Initialize the OpenAI model with the API key and model name from Streamlit secrets
 MODEL = os.getenv("OPENAI_MODEL")
 API_KEY = os.getenv("OPENAI_KEY")
 
+class DiagramData(BaseModel):
+    """
+    Data model for storing diagram generation information.
+
+    Attributes:
+        import_code (str): The import statements required for the diagram.
+        diagram_code (str): The code that defines the diagram structure.
+        ai_response (str): The AI-generated response or explanation.
+    """
+    import_code: str = Field(..., description="The import statements required for the diagram.")
+    diagram_code: str = Field(..., description="The code that defines the diagram structure.")
+    ai_response: str = Field(..., description="The AI-generated response or explanation.")
+
 class State(MessagesState):
-    pass
+    import_code: str
+    diagram_code: str
+    python_diagram_code: str
+    image_path: str
 
-def chatbot(state: State):
-    return {"messages": [llm_with_tools.invoke(state["messages"])]}
+def assistant(state: State):
+    MODEL_SYSTEM_MESSAGE = """
+    You are a helpful assistant that generates diagrams based on user input.
 
-llm = ChatOpenAI(model=MODEL, api_key=API_KEY, temperature=0.7)
-# Initialize Tavily Search Tool
-tavily_search_tool = TavilySearch(max_results=2)
-tools = [tavily_search_tool]
-llm_with_tools = llm.bind_tools(tools)
-tool_node = ToolNode(tools=tools)
+    Your responsibilities:
+    1. Answer the user’s questions in a clear, concise, and friendly way.  
+    2. Ask clarifying questions about the user’s preferences or requirements when needed.  
+    3. Generate the correct `import_code` and `diagram_code` (Python code using the diagrams library) based strictly on the user’s input.  
+    4. Revise and improve the diagram when the user provides feedback.  
 
+    Output format:  
+    Always return three fields:
+    - import_code → contains only the necessary Python imports.  Do not include any comments, only python code
+    - diagram_code → contains only the diagram structure code (Do not include with Diagram() sentence). Do not include any comments, only python code
+    - ai_response → the user-facing natural language response.  
 
+    Important constraints:  
+    - The ai_response **must never reveal, show, or mention any code, imports, or implementation details**.  
+    - Do not explain how the code works or how to run it.  
+    - The ai_response should sound natural, e.g., “Here’s the updated diagram based on your input.”  
+    - All code must only appear inside `import_code` and `diagram_code`.
+    - Do not generate this kind of sentence : "with Diagram()" in diagram_code
+
+    Examples:
+
+    import_code_example = \"\"\"  
+    from diagrams import Diagram  
+    from diagrams.aws.compute import EC2  
+    from diagrams.aws.database import RDS  
+    from diagrams.aws.network import ELB  
+    \"\"\"
+
+    diagram_code_example = \"\"\"  
+    ELB("lb") >> [EC2("worker1"),  
+    EC2("worker2"),  
+    EC2("worker3"),  
+    EC2("worker4"),  
+    EC2("worker5")] >> RDS("events")  
+    \"\"\"
+
+    ai_response_example = "Here’s the diagram based on your input."
+
+    Conversation:
+    """
+
+    response = model.with_structured_output(DiagramData).invoke([SystemMessage(content=MODEL_SYSTEM_MESSAGE)]+state["messages"])
+    import_code = response.import_code
+    diagram_code = response.diagram_code
+    ai_response = response.ai_response
+    return {"messages": [AIMessage(content=ai_response)],
+            "import_code": import_code,
+            "diagram_code": diagram_code
+            }
+def is_generated_diagram_code(state: State):
+    if state["import_code"] and state["diagram_code"]:
+        return True
+    else:
+        return False
+
+def generate_diagram(state: State):
+    python_diagram_code = generate(import_code=state["import_code"], 
+                                   diagram_code=state["diagram_code"])
+    print("Generated Diagram Code:")
+    print(python_diagram_code)
+    return {"python_diagram_code": python_diagram_code, "image_path": "./output/diagram_image.png"}
+
+model = ChatOpenAI(model=MODEL, api_key=API_KEY, temperature=0.7)
 
 # Build the graph directly
 builder = StateGraph(State)
-builder.add_node("chatbot", chatbot)
-builder.add_node("tools", tool_node)
-
+builder.add_node("assistant", assistant)
+builder.add_node("generate_diagram", generate_diagram)
+builder.add_edge(START, "assistant")
+builder.add_edge("generate_diagram", END)
 builder.add_conditional_edges(
-    "chatbot",
-    tools_condition,
-)
+            "assistant", 
+            is_generated_diagram_code, # the function that determines which node to go to next
+            {True: "generate_diagram", False: END} # if the function returns True, go to action, otherwise end the graph
+        )
+memory = MemorySaver()
+agent = builder.compile(checkpointer=memory)  # <-- This is now a Graph
 
-builder.add_edge("tools", "chatbot")
-builder.add_edge(START, "chatbot")
-agent = builder.compile()  # <-- This is now a Graph
+#graph_image = agent.get_graph().draw_mermaid_png()
+#with open("agent.png", "wb") as f:
+#    f.write(graph_image)
 
-# Optionally, generate the image (not required for the export)
-graph_image = agent.get_graph().draw_mermaid_png()
-with open("static/chatbot_agent.png", "wb") as f:
-    f.write(graph_image)
+def invoke(message, thread_id="1"):
+    config = {"configurable": {"thread_id": thread_id}}
+    messages = [HumanMessage(content=message)]
+    response = agent.invoke({"messages": messages}, config=config)
+    image_path = response.get("image_path", None)
+    python_diagram_code = response.get("python_diagram_code", None)
+    return response["messages"][-1].content, image_path, python_diagram_code
+
+if __name__ == "__main__":
+    while True:
+        user_message = input("You: ")   
+        if user_message.lower() == "exit":
+            break
+        response, image_path, python_diagram_code = invoke(user_message)
+        print(response)
+        #print("Generated Diagram Code:")
+        #print(python_diagram_code)

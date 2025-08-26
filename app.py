@@ -14,7 +14,7 @@ if "image_path" not in st.session_state:
     st.session_state.image_path = None
 
 if "python_diagram_code" not in st.session_state:
-    st.session_state.python_diagram_code = None
+    st.session_state.python_diagram_code = ""
 
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = ["Chat 1","Chat 2","Chat 3"]
@@ -46,10 +46,11 @@ with st.sidebar:
 
 
 #generate()
-try:
-    tab1, tab2, tab3 = st.tabs(["Diagram", "Python Diagram Code", "Agent Graph"])
 
-    with tab1:
+tab1, tab2, tab3 = st.tabs(["Diagram", "Python Diagram Code", "Agent Graph"])
+
+with tab1:
+    try:
         st.image(st.session_state.image_path)
         # Add download button for the diagram image
         if st.session_state.image_path:
@@ -60,11 +61,11 @@ try:
                     file_name="diagram.png",
                     mime="image/png"
                 )
+    except:
+        pass
 
-    with tab2:
-        st.code(st.session_state.python_diagram_code)
+with tab2:
+    st.code(st.session_state.python_diagram_code)
 
-    with tab3:
-        st.image("agent.png", caption="Agent")
-except:
-    pass
+with tab3:
+    st.image("agent.png", caption="Agent")

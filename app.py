@@ -2,7 +2,7 @@ import uuid
 import streamlit as st
 from agent.utils.diagram_handler import generate
 
-st.set_page_config(layout="wide")
+#st.set_page_config(layout="wide")
 
 if "chat_id" not in st.session_state:
     st.session_state.chat_id = str(uuid.uuid4())

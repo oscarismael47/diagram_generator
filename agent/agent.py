@@ -1,7 +1,6 @@
 import os
-from pyexpat import model
+import streamlit as st
 from langchain_openai import ChatOpenAI
-from langchain_tavily import TavilySearch
 from langgraph.graph import MessagesState
 from langgraph.constants import START, END
 from langgraph.graph import StateGraph
@@ -15,9 +14,13 @@ except:
     from utils.diagram_handler import generate
 load_dotenv()
 
+
+MODEL = st.secrets.get("OPENAI_MODEL")
+API_KEY = st.secrets.get("OPENAI_KEY")
+
 # Initialize the OpenAI model with the API key and model name from Streamlit secrets
-MODEL = os.getenv("OPENAI_MODEL")
-API_KEY = os.getenv("OPENAI_KEY")
+#MODEL = os.getenv("OPENAI_MODEL")
+#API_KEY = os.getenv("OPENAI_KEY")
 
 class DiagramData(BaseModel):
     """

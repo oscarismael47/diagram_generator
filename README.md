@@ -1,8 +1,8 @@
-# diagram_generator
+# Diagram Generator
 
 A Streamlit-based web app for generating and visualizing architecture diagrams (e.g., AWS) using Python code.
 
-![Example AWS Diagram](./static/screenshot.png)
+![Example AWS Diagram](./static/recording.gif)
 
 ## Features
 

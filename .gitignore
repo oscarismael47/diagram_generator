@@ -202,6 +202,6 @@ cython_debug/
 .cursorindexingignore
 
 
-output/
+out/
 .streamlit/
 recordings/

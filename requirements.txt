@@ -3,9 +3,13 @@ langchain-tavily
 langchain-qdrant
 langgraph
 langgraph-cli[inmem]
+langgraph-supervisor
 python-dotenv
 streamlit
 diagrams
+pyppeteer
+
+
 
 #st-link-analysis
 

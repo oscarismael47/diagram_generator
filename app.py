@@ -91,4 +91,4 @@ with tab2:
     st.code(st.session_state.python_diagram_code)
 
 with tab3:
-    st.image("agent.png", caption="Agent")
+    st.image("static/agent_graph.png", caption="Agent")

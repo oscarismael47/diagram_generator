@@ -1,5 +1,6 @@
 import random
 import textwrap
+from datetime import datetime
  
 bgcolors = ["gray89"] # https://graphviz.gitlab.io/doc/info/colors.html
 
@@ -12,12 +13,15 @@ def check_modules(import_code):
         except Exception as e:
             error_messages.append(str(e))
     if len(error_messages) == 0:
-        return True, []
+        status = True
     else:
-        return False, error_messages
+        status = False
+    return status, error_messages
 
 def generate(import_code=None, diagram_code=None):
-    # direction="TB",
+    now = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+    filename = f"\"./out/diagram_image_{now}\""
+    outformat="\"png\""
     base_code = f"""
 {import_code}
 graph_attr = {{
@@ -25,16 +29,18 @@ graph_attr = {{
     "margin":"-1.5, -2"
 }}
 
-filename = "diagram_image"
-with Diagram("Diagram", show=True,  filename=filename, outformat="png", graph_attr=graph_attr):
+filename = {filename}
+with Diagram("Diagram", show=False,  filename=filename, outformat={outformat}, graph_attr=graph_attr):
 {textwrap.indent(diagram_code, '    ')}
 """
     try:
         exec(base_code)
         error_message = None
+        image_path = f"{filename.strip('\"')}.{outformat.strip('\"')}"
     except Exception as e:
         error_message = str(e)
-    return base_code, error_message
+        image_path = None
+    return base_code, error_message, image_path
 
 if __name__ == "__main__":
     

@@ -1,9 +1,15 @@
 import uuid
 import time
 import streamlit as st
+from datetime import datetime
 from agent.utils.diagram_helper import generate
-from agent.agent_v2 import invoke 
+from agent.agent import invoke 
 #st.set_page_config(layout="wide")
+
+
+def display_past_values(image_path, python_diagram_code):
+    st.session_state.image_path = image_path
+    st.session_state.python_diagram_code = python_diagram_code
 
 if "chat_id" not in st.session_state:
     st.session_state.chat_id = str(uuid.uuid4())
@@ -22,6 +28,7 @@ if "chat_history" not in st.session_state:
 
 
 
+
 with st.sidebar:
     chatbot = st.selectbox("Chat history",
                            st.session_state.chat_history,
@@ -35,24 +42,33 @@ with st.sidebar:
             with st.chat_message(name=message["role"]):
                 st.markdown(message["content"])
                 if message["role"] == "assistant":
-                    #st.button("Regenerate", key=str(uuid.uuid4()), on_click=invoke, args=(message["content"], st.session_state.chat_id))
-                    ## get time stamp
-                    current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-                    st.button(f"Generated Diagram 🖼️", type="primary",key=str(uuid.uuid4()))
-
+                    if message["metadata"].get("image_path") and message["metadata"].get("python_diagram_code"):
+                        key = str(uuid.uuid4())
+                        st.button(f"Generated Diagram 🖼️", 
+                                type="primary",
+                                key=key,
+                                on_click=display_past_values,
+                                args=(message["metadata"].get("image_path"), message["metadata"].get("python_diagram_code"))
+                                )
 
     if message := st.chat_input("What is up?"):
         response, image_path, python_diagram_code = invoke(message=message, thread_id=st.session_state.chat_id)
+        metadata = {}
+        if image_path != st.session_state.image_path:
+            metadata["image_path"] = image_path
+        else:
+            metadata["image_path"] = None
+        if python_diagram_code != st.session_state.python_diagram_code:
+            metadata["python_diagram_code"] = python_diagram_code
+        else:
+            metadata["python_diagram_code"] = None
+
         st.session_state.messages.append({"role": "user", "content": message})
-        st.session_state.messages.append({"role": "assistant", "content": response})
+        st.session_state.messages.append({"role": "assistant", "content": response, "metadata": metadata})
         st.session_state.image_path = image_path
         st.session_state.python_diagram_code = python_diagram_code
         st.rerun()
 
-    
-
-
-#generate()
 
 tab1, tab2, tab3 = st.tabs(["Diagram", "Python Diagram Code", "Agent Graph"])
 

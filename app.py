@@ -2,7 +2,7 @@ import uuid
 import time
 import streamlit as st
 from agent.utils.diagram_helper import generate
-from agent.agent import invoke 
+from agent.agent_v2 import invoke 
 #st.set_page_config(layout="wide")
 
 if "chat_id" not in st.session_state:

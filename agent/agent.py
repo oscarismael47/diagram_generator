@@ -9,9 +9,9 @@ from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 try:
-    from agent.utils.diagram_handler import generate
+    from agent.utils.diagram_helper import generate
 except:
-    from utils.diagram_handler import generate
+    from agent.utils.diagram_helper import generate
 load_dotenv()
 
 
@@ -107,7 +107,7 @@ def generate_diagram(state: State):
     print(python_diagram_code)
     return {"python_diagram_code": python_diagram_code, "image_path": "./output/diagram_image.png"}
 
-model = ChatOpenAI(model=MODEL, api_key=API_KEY, temperature=0.7)
+model = ChatOpenAI(model=MODEL, api_key=API_KEY, temperature=1)
 
 # Build the graph directly
 builder = StateGraph(State)

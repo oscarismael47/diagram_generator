@@ -1,6 +1,7 @@
-langgraph
 langchain-openai
 langchain-tavily
+langchain-qdrant
+langgraph
 langgraph-cli[inmem]
 python-dotenv
 streamlit

@@ -1,6 +1,7 @@
 import uuid
+import time
 import streamlit as st
-from agent.utils.diagram_handler import generate
+from agent.utils.diagram_helper import generate
 from agent.agent import invoke 
 #st.set_page_config(layout="wide")
 
@@ -33,6 +34,12 @@ with st.sidebar:
         for message in st.session_state.messages:
             with st.chat_message(name=message["role"]):
                 st.markdown(message["content"])
+                if message["role"] == "assistant":
+                    #st.button("Regenerate", key=str(uuid.uuid4()), on_click=invoke, args=(message["content"], st.session_state.chat_id))
+                    ## get time stamp
+                    current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+                    st.button(f"Generated Diagram 🖼️", type="primary",key=str(uuid.uuid4()))
+
 
     if message := st.chat_input("What is up?"):
         response, image_path, python_diagram_code = invoke(message=message, thread_id=st.session_state.chat_id)
